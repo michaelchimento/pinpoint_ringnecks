@@ -39,8 +39,7 @@ if __name__=="__main__":
 
     parent_directories = [join(server_path, d) for d in os.listdir(server_path)
                             if (isdir(join(server_path, d)) and
-                            re.search("P\d?\d", d).group(0)==target_pop) and
-                            "Puzzle" not in d and
+                            re.search("P\d+", d).group(0)==target_pop) and
                             join(server_path,d) not in already_processed]
     parent_directories = sorted(parent_directories, key=str.lower, reverse=False)
 
@@ -51,8 +50,8 @@ if __name__=="__main__":
         if not isdir(join(data_dir_video_frame,os.path.basename(directory))):
             mkdir(join(data_dir_video_frame,os.path.basename(directory)))
         #rawtime = re.search("\d\d\d\d-\d\d-\d\d_\d\d", directory).group(0)
-        population = re.search("P\d?\d", directory).group(0)
-        room = re.search("B?D?\d?\d", directory).group(0)
+        population = re.search("P\d+", directory).group(0)
+        room = re.search("B\d+|D\d+", directory).group(0)
         #these child directories are filled with photos from 5 min intervals
         child_directories = [join(server_path, directory, child) for child in os.listdir(directory)
                                 if (isdir(join(server_path, directory, child)) and
