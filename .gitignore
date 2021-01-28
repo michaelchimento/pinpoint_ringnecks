@@ -3,6 +3,7 @@ coallated_data/*
 data/*
 logs/*
 video_frame_data/*
+*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
