@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, isdir
 import fileinput
 import sys
 import re
@@ -12,12 +12,12 @@ target_pops = ["P1","P2","P3","P4"]
 
 types = ["Social","Feeder"]
 
-folder_list = [join(directory_path,f) for f in listdir(directory_path)]
+folder_list = [join(directory_path,f) for f in listdir(directory_path) if "readme" not in f]
+print(folder_list)
 
 for camera_type in types:
     for target_pop in target_pops:
-        for f in listdir(directory_path):
-            print(f)
+        print(camera_type + target_pop)
         
         df_list = [pd.read_csv(join(folder,f)) for folder in folder_list for f in listdir(folder) if re.search("P\d+", f).group(0)==target_pop and camera_type in folder]
         
