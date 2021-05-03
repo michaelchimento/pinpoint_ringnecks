@@ -214,7 +214,7 @@ def get_contours(threshold_image):
 
     return contours
 
-def contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes, flat_len, IDs, font,timeofframe, pt1, population, room):
+def contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes, flat_len, IDs, font,timeofframe, pt1, population, room, camera_name):
     # define frame edges for checking for tags
     edge_thresh = 1
     image_shape = image.shape
@@ -223,7 +223,7 @@ def contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes, fl
     to_write_list = []
     detected_tags = []
     #change these values to fit the size of barcode you want to detect
-    upper_size_limit = -500
+    upper_size_limit = -1000
     lower_size_limit = -50
 
     for cnt in contours:
@@ -313,7 +313,7 @@ def contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes, fl
                                 #cv2.putText(image,str(ID),mid_centroid, font, font_scale,(255,255,255),inline_font,cv2.LINE_AA)
 
                                 #write to data file
-                                to_write_line = "{},{},{},{},{},{},{},{},{}\n".format(population, room, timeofframe ,ID, best_value, (centroid[0]+pt1[0]), (centroid[1]+pt1[1]), vector_angle, poly_area )
+                                to_write_line = "{},{},{},{},{},{},{},{},{},{}\n".format(population, room, camera_name, timeofframe ,ID, best_value, (centroid[0]+pt1[0]), (centroid[1]+pt1[1]), vector_angle, poly_area )
                                 to_write_list.append(to_write_line)
                                 detected_tags.append(ID)
 
@@ -332,18 +332,22 @@ def write_csv(to_write, data_filepath):
 
 
 #decode() iterates through photos within a directory and writes information related to ID and position into a spreadsheet
-def decode(image_dir,data_filepath,video_filepath,video_frame_filepath, tags,target_pop,room):
+def decode(image_dir,data_filepath,video_filepath,video_frame_filepath, tags,target_pop,room,camera_name):
     master_list = tags.master_list
     IDs = tags.id_list
     zipped_list = list(zip(IDs, master_list))
     if target_pop=="P1":
-        approved_list = [110,111,112,113]
+        approved_list = [1]
     elif target_pop=="P2":
-        approved_list = [108,109,106,107]
+        approved_list = [1,2,3,5,4]
     elif target_pop=="P3":
-        approved_list = [97,98,103,104]
+        approved_list = [1]
     elif target_pop=="P4":
-        approved_list = [101,102,100,99]
+        approved_list = [7,8,9]
+    elif target_pop=="P5":
+        approved_list = [10,11,12]
+    elif target_pop=="P6":
+        approved_list = [13,14,15]
 
     IDs = [id[0] for id in zipped_list if id[0] in approved_list]
     barcode_size = (7,7)
@@ -376,11 +380,7 @@ def decode(image_dir,data_filepath,video_filepath,video_frame_filepath, tags,tar
     images_to_process = sorted(images_to_process, key=str.lower, reverse=False)
     print("processing {} images".format(len(images_to_process)))
     
-    if "Feeder" in image_dir:
-        print("feeder folder, resize less")
-        resize_param = 0.9
-    else:
-        resize_param = 0.8
+    resize_param = 0.9
 
     #get the size of first frame to set size params for video
     print(len(images_to_process))
@@ -397,15 +397,16 @@ def decode(image_dir,data_filepath,video_filepath,video_frame_filepath, tags,tar
     for count, image_path in enumerate(images_to_process):
         image = cv2.imread(image_path)
         out.write(image)
-        if "Social" in image_dir:
-            image = cv2.resize(image, (0,0), fx=resize_param, fy=resize_param) 
-        frame_height, frame_width, channels = image.shape
-        pt1 = (0,0) #top-left corner
-        pt2 = (frame_width,frame_height) #bottom-right corner
         timeofframe = re.search("\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d-\d\d\d\d\d\d",image_path).group(0)
         timeofframe = dt.datetime.strptime(timeofframe, "%Y-%m-%d-%H-%M-%S-%f")
         to_write_vframe = "{},{}\n".format(timeofframe,count)
         write_csv(to_write_vframe,video_frame_filepath)
+        
+        #exclude these populations, since no backpacks
+        image = cv2.resize(image, (0,0), fx=resize_param, fy=resize_param) 
+        frame_height, frame_width, channels = image.shape
+        pt1 = (0,0) #top-left corner
+        pt2 = (frame_width,frame_height) #bottom-right corner
         gray = get_grayscale(image, channel = 'green')
         gray = cv2.GaussianBlur(gray, (1,1), 1)
         
@@ -417,14 +418,14 @@ def decode(image_dir,data_filepath,video_filepath,video_frame_filepath, tags,tar
             contours = get_contours(thresh)
 
             #this begins to loop through the detected contours
-            to_write, detected_tags, num_detections = contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes,flat_len, IDs, font, timeofframe, pt1, target_pop, room)
+            to_write, detected_tags, num_detections = contour_loop(contours, image, dst, gray, maxSide, barcode_size, barcodes,flat_len, IDs, font, timeofframe, pt1, target_pop, room, camera_name)
             #cv2.imshow("preview",image)
 
             if num_detections > 0:
                 print("num_detects: {} -- IDs {} -- @ offset {} @ time {}".format(num_detections, detected_tags, offset_v,timeofframe))
                 write_csv(to_write, data_filepath)
-                break
-
+                #break
+        
         k = cv2.waitKey(1)
         if k == ord('q'):
             break

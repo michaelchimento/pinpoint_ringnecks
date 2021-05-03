@@ -1,6 +1,6 @@
 library(tidyverse)
 library(lubridate)
-setwd("/home/michael/pinpoint_ringnecks")
+setwd("/home/shared_projects/pinpoint_ringnecks")
 
 
 file_names <- dir("coallated_data") #where you have your files
@@ -36,6 +36,9 @@ p1 = ggplot(data=df_sum %>% filter(camera_type=="feeder"), aes(x=date,y=id))+
   labs(y="ID",x="Day",title="Pinpoint detections: Feeder cams")+
   theme_dark()
 ggsave(p1,file="pinpoint_detections_heatmap_feeder.pdf",width=15,height=8, units="in")
+
+df_sum = df %>% mutate(id = as.factor(id),population=factor(population, c("P1","P2","P3","P4"))) %>% 
+  group_by(population,date,id) %>% summarize(sum = n())
 
 p1 = ggplot(data=df_sum, aes(x=date,y=id))+
   facet_wrap(~population,scales="free")+
